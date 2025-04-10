@@ -31,17 +31,39 @@ exports.getListings = async (req, res) => {
 exports.getListingById = async (req, res) => {
   try {
     const { id } = req.params;
-    const [rows] = await pool.query("SELECT * FROM listings WHERE id = ?", [id]);
+
+    // Join listings with hotel_details on id
+    const [rows] = await pool.query(
+      `
+      SELECT 
+        l.*, 
+        h.num_rooms AS rooms,
+        h.room_types
+      FROM listings l
+      LEFT JOIN hotel_details h ON l.id = h.listing_id
+      WHERE l.id = ?
+      `,
+      [id]
+    );
 
     if (!rows.length) {
       return res.status(404).json({ success: false, error: "Listing not found" });
     }
 
     const listing = rows[0];
+
+    // Parse amenities
     try {
-      listing.amenities = JSON.parse(listing.amenities);
+      listing.amenities = JSON.parse(listing.amenities || "[]");
     } catch {
       listing.amenities = [];
+    }
+
+    // Parse room_types
+    try {
+      listing.room_types = JSON.parse(listing.room_types || "[]");
+    } catch {
+      listing.room_types = [];
     }
 
     res.json({ success: true, data: listing });
@@ -50,6 +72,8 @@ exports.getListingById = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
+
+
 
 // GET all listings by adminId (Protected Route)
 exports.getListingsByAdmin = async (req, res) => {
