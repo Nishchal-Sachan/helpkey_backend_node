@@ -98,11 +98,12 @@ exports.logoutAdmin = (req, res) => {
 };
 
 // Auth Check
+// Auth Check
 exports.getAuthUser = async (req, res) => {
   try {
     const token = req.cookies.token;
     if (!token) {
-      return res.status(401).json({ success: false, error: "Not authenticated" });
+      return res.status(401).json({ success: false, isAuthenticated: false, error: "Not authenticated" });
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -113,12 +114,17 @@ exports.getAuthUser = async (req, res) => {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ success: false, error: "Admin not found" });
+      return res.status(404).json({ success: false, isAuthenticated: false, error: "Admin not found" });
     }
 
-    res.status(200).json({ success: true, data: rows[0] });
+    res.status(200).json({
+      success: true,
+      isAuthenticated: true,
+      data: rows[0],
+    });
   } catch (err) {
     console.error("Auth User Error:", err);
-    res.status(401).json({ success: false, error: "Invalid or expired token" });
+    res.status(401).json({ success: false, isAuthenticated: false, error: "Invalid or expired token" });
   }
 };
+
