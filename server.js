@@ -19,7 +19,7 @@ app.use(corsMiddleware);
 
 // Routes
 app.use('/api/admin', adminRoutes);
-app.use('/api/authuser', authUserRoute);
+app.use('/api', authUserRoute);
 app.use('/api/amenities', amenitiesRoute);
 app.use('/api/bookings', bookingsRoute);
 app.use('/api/listings', listingRoutes);
