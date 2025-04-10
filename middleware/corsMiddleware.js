@@ -3,7 +3,8 @@ const cors = require('cors');
 const allowedOrigins = [
   "https://helpkey-frontend.vercel.app",
   "https://helpkey-webapp.vercel.app",
-  "http://localhost:3000"
+  "http://localhost:3000",
+  "http://localhost:3001"
 ];
 
 const corsOptions = {
