@@ -22,7 +22,7 @@ console.log({
 
 
 // Admin routes FIRST
-router.get("/admin/listings", verifyAdmin, getListingsByAdmin); // GET /api/listing/admin/listings
+router.get("/admin", verifyAdmin, getListingsByAdmin); // GET /api/listing/admin/listings
 
 // Public routes
 router.get("/", getListings); // GET /api/listing?location=xyz
