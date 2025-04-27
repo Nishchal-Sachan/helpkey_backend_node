@@ -473,72 +473,92 @@ exports.createListing = async (req, res) => {
 // };
 
 exports.updateListing = async (req, res) => {
-  const { id } = req.params; // listing id
-  const adminId = req.admin?.id; // admin id from the session
-  const {
-    title, description, location, image_url,
+  console.log(req.body);
+  const adminId = req.admin?.id;
+  const { 
+    listingId, title, description, location, image_url,
     amenities, property_type, beds, bathrooms, guests,
-    place_category, discount, hotelDetails,
+    place_category, discount, room_type, number_of_rooms, floor_no,
+    villa_details, hotel_details, price
   } = req.body;
 
+  // Ensure the required static fields and listingId are present
+  if (!listingId || !title || !location || !property_type || !place_category) {
+    return res.status(400).json({ success: false, error: "Missing required fields" });
+  }
+
   try {
-    // Check if the listing exists
-    const [existingRows] = await pool.query("SELECT * FROM listings WHERE id = ?", [id]);
-    if (existingRows.length === 0) {
-      return res.status(404).json({ success: false, error: "Listing not found" });
-    }
-
-    // Check if the admin is authorized to update this listing
-    if (existingRows[0].admin_id !== adminId) {
-      return res.status(403).json({ success: false, error: "Unauthorized" });
-    }
-
-    // Update static fields in the 'listings' table (excluding discount)
-    await pool.query(
-      `UPDATE listings SET
-        title = ?, description = ?, location = ?, property_type = ?, place_category = ?
-        WHERE id = ?`,
-      [
-        title, description, location, property_type, place_category, id,
-      ]
+    // Update static data in the 'listings' table
+    const [result] = await pool.query(
+      `UPDATE listings 
+       SET title = ?, description = ?, location = ?, property_type = ?, place_category = ? 
+       WHERE id = ? AND admin_id = ?`,
+      [title, description, location, property_type, place_category, listingId, adminId]
     );
 
-    // Prepare dynamic fields to be stored in the 'listing_details' table
-    const dynamicDetails = {};
-
-    // Include dynamic fields in the details object
-    if (image_url) dynamicDetails.image_url = image_url;
-    if (amenities) dynamicDetails.amenities = amenities;
-    if (beds) dynamicDetails.beds = beds;
-    if (bathrooms) dynamicDetails.bathrooms = bathrooms;
-    if (guests) dynamicDetails.guests = guests;
-    if (discount) dynamicDetails.discount = discount; // Add discount to dynamic fields
-    if (hotelDetails && typeof hotelDetails === "object") dynamicDetails.hotelDetails = hotelDetails;
-
-    // Update dynamic fields in the 'listing_details' table
-    const [detailsRows] = await pool.query("SELECT * FROM listing_details WHERE listing_id = ?", [id]);
-
-    if (detailsRows.length > 0) {
-      // If listing details already exist, update them
-      await pool.query(
-        "UPDATE listing_details SET details = ? WHERE listing_id = ?",
-        [JSON.stringify(dynamicDetails), id]
-      );
-    } else {
-      // If listing details don't exist, create a new entry
-      await pool.query(
-        "INSERT INTO listing_details (listing_id, details) VALUES (?, ?)",
-        [id, JSON.stringify(dynamicDetails)]
-      );
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ success: false, error: "Listing not found or not authorized" });
     }
 
-    // Return success response
-    res.status(200).json({ success: true, message: "Listing updated successfully" });
+    // Prepare dynamic fields to be updated in the 'listing_details' table
+    const listingDetails = {};
+
+    // Include dynamic fields based on the property type
+    if (image_url) listingDetails.image_url = image_url;
+    if (amenities) listingDetails.amenities = amenities;
+    if (beds) listingDetails.beds = beds;
+    if (bathrooms) listingDetails.bathrooms = bathrooms;
+    if (guests) listingDetails.guests = guests;
+    if (discount) listingDetails.discount = discount;
+
+    // Specific fields for each property type
+    if (property_type === "hotel") {
+      if (room_type) listingDetails.room_type = room_type;
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (floor_no) listingDetails.floor_no = floor_no;
+      if (hotel_details) listingDetails.hotel_details = hotel_details;
+    }
+
+    if (property_type === "hostel") {
+      if (room_type) listingDetails.room_type = room_type;
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (floor_no) listingDetails.floor_no = floor_no;
+    }
+
+    if (property_type === "apartment") {
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (floor_no) listingDetails.floor_no = floor_no;
+    }
+
+    if (property_type === "villa") {
+      if (villa_details) listingDetails.villa_details = villa_details;
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (bathrooms) listingDetails.bathrooms = bathrooms;
+      if (price) listingDetails.price = price;
+    }
+
+    // Update dynamic data in the 'listing_details' table
+    await pool.query(
+      `UPDATE listing_details 
+       SET details = ? 
+       WHERE listing_id = ?`,
+      [JSON.stringify(listingDetails), listingId]
+    );
+
+    // Return success response with updated details
+    res.status(200).json({
+      success: true,
+      message: "Listing updated successfully",
+      listingId,
+      listingDetails: listingDetails // Optionally return the updated details
+    });
+
   } catch (err) {
-    console.error("Error updating listing:", err);
+    console.error("Error updating listing:", err.message);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 
 // DELETE listing
