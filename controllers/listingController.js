@@ -336,6 +336,7 @@ exports.getListingsByAdmin = async (req, res) => {
 // };
 
 exports.createListing = async (req, res) => {
+  console.log(req.body);
   const adminId = req.admin?.id;
   const {
     title, description, location, image_url,
