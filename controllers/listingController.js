@@ -340,7 +340,8 @@ exports.createListing = async (req, res) => {
   const {
     title, description, location, image_url,
     amenities, property_type, beds, bathrooms, guests,
-    place_category, discount, hotelDetails,
+    place_category, discount, room_type, number_of_rooms, floor_no, 
+    villa_details, hotel_details
   } = req.body;
 
   // Ensure the required static fields are present
@@ -365,14 +366,39 @@ exports.createListing = async (req, res) => {
     // Prepare dynamic fields to be stored in the 'listing_details' table
     const listingDetails = {};
 
-    // Include all dynamic fields in the details object
+    // Include dynamic fields based on the property type
     if (image_url) listingDetails.image_url = image_url;
     if (amenities) listingDetails.amenities = amenities;
     if (beds) listingDetails.beds = beds;
     if (bathrooms) listingDetails.bathrooms = bathrooms;
     if (guests) listingDetails.guests = guests;
     if (discount) listingDetails.discount = discount;
-    if (hotelDetails) listingDetails.hotelDetails = hotelDetails;
+
+    // Specific fields for each property type
+    if (property_type === "hotel") {
+      if (room_type) listingDetails.room_type = room_type;
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (floor_no) listingDetails.floor_no = floor_no;
+      if (hotel_details) listingDetails.hotel_details = hotel_details;
+    }
+
+    if (property_type === "hostel") {
+      if (room_type) listingDetails.room_type = room_type;
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (floor_no) listingDetails.floor_no = floor_no;
+    }
+
+    if (property_type === "apartment") {
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (floor_no) listingDetails.floor_no = floor_no;
+    }
+
+    if (property_type === "villa") {
+      if (villa_details) listingDetails.villa_details = villa_details;
+      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
+      if (bathrooms) listingDetails.bathrooms = bathrooms;
+      if (price) listingDetails.price = price;
+    }
 
     // Insert dynamic data into the 'listing_details' table as JSON
     await pool.query(
