@@ -341,12 +341,12 @@ exports.createListing = async (req, res) => {
   const {
     title, description, location, image_url,
     amenities, property_type, beds, bathrooms, guests,
-    place_category, discount, room_type, number_of_rooms, floor_no, 
+    category, discount, room_type, number_of_rooms, floor_no, 
     villa_details, hotel_details
   } = req.body;
 
   // Ensure the required static fields are present
-  if (!title || !location || !property_type || !place_category) {
+  if (!title || !location || !property_type || !category) {
     return res.status(400).json({ success: false, error: "Missing required fields" });
   }
 
@@ -358,7 +358,7 @@ exports.createListing = async (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?)`,
       [
         title, description, location, property_type,
-        place_category, adminId,
+        category, adminId,
       ]
     );
 
