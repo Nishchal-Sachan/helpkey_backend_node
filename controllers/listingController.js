@@ -16,12 +16,37 @@ exports.getListings = async (req, res) => {
 
     query += " ORDER BY created_at DESC";
 
-    const [rows] = await pool.query(query, queryParams);
-    const [detailsRows] = await pool.query("SELECT details FROM listing_details WHERE listing_id = ?", [id]);
-    const details = detailsRows.length > 0 ? detailsRows[0].details : null;
+    const [listings] = await pool.query(query, queryParams);
+    // Fetch dynamic details (hotelDetails or other) for each listing
+    const listingIds = listings.map(listing => listing.id);
 
-    // res.status(200).json({ success: true, listing: rows[0], details });
-    res.status(200).json({ success: true, listings: rows,details });
+    let detailsMap = {};
+    if (listingIds.length > 0) {
+      const [detailsRows] = await pool.query(
+        `SELECT listing_id, details FROM listing_details WHERE listing_id IN (${listingIds.map(() => '?').join(',')})`,
+        listingIds
+      );
+
+      detailsRows.forEach(row => {
+        detailsMap[row.listing_id] = row.details;
+      });
+    }
+
+    // Parse amenities and attach details
+    listings.forEach(listing => {
+      try {
+        listing.amenities = JSON.parse(listing.amenities);
+      } catch {
+        listing.amenities = [];
+      }
+
+      listing.details = detailsMap[listing.id] || null;
+    });
+
+    res.status(200).json({ success: true, listings });
+
+    // // res.status(200).json({ success: true, listing: rows[0], details });
+    // res.status(200).json({ success: true, listings});
   } catch (err) {
     console.error("Error fetching listings:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
