@@ -17,7 +17,11 @@ exports.getListings = async (req, res) => {
     query += " ORDER BY created_at DESC";
 
     const [rows] = await pool.query(query, queryParams);
-    res.status(200).json({ success: true, listings: rows });
+    const [detailsRows] = await pool.query("SELECT details FROM listing_details WHERE listing_id = ?", [id]);
+    const details = detailsRows.length > 0 ? detailsRows[0].details : null;
+
+    // res.status(200).json({ success: true, listing: rows[0], details });
+    res.status(200).json({ success: true, listings: rows,details });
   } catch (err) {
     console.error("Error fetching listings:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
