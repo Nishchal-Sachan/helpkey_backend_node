@@ -114,47 +114,43 @@ exports.getListingsByAdmin = async (req, res) => {
 };
 
 exports.createListing = async (req, res) => {
-  console.log(req.body);
+  console.log("Body:", req.body);
+  console.log("File:", req.file);
+
   const adminId = req.admin?.id;
   const {
-    title, description, location, image_url,
+    title, description, location,
     amenities, property_type, beds, bathrooms, guests,
     category, discount, room_type, number_of_rooms, floor_no, 
     villa_details, hotel_details, price
   } = req.body;
 
-  // Ensure the required static fields are present
   if (!title || !location || !property_type || !category) {
     return res.status(400).json({ success: false, error: "Missing required fields" });
   }
 
   try {
-    // Insert static data into the 'listings' table
     const [result] = await pool.query(
       `INSERT INTO listings 
         (title, description, location, property_type, place_category, admin_id) 
         VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        title, description, location, property_type,
-        category, adminId,
-      ]
+      [title, description, location, property_type, category, adminId]
     );
 
     const listingId = result.insertId;
 
-    // Prepare dynamic fields to be stored in the 'listing_details' table
     const listingDetails = {};
 
-    // Include dynamic fields based on the property type
-    if (image_url) listingDetails.image_url = image_url;
+    // Use image path from multer
+    if (req.file) listingDetails.image_url = req.file.path;
+
     if (amenities) listingDetails.amenities = amenities;
     if (beds) listingDetails.beds = beds;
     if (bathrooms) listingDetails.bathrooms = bathrooms;
     if (guests) listingDetails.guests = guests;
     if (discount) listingDetails.discount = discount;
-    if (price) listingDetails.price = price; // Ensure price is added here
+    if (price) listingDetails.price = price;
 
-    // Specific fields for each property type
     if (property_type === "hotel") {
       if (room_type) listingDetails.room_type = room_type;
       if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
@@ -179,20 +175,25 @@ exports.createListing = async (req, res) => {
       if (bathrooms) listingDetails.bathrooms = bathrooms;
     }
 
-    console.log(listingDetails);
-    // Insert dynamic data into the 'listing_details' table as JSON
+    console.log("Listing details:", listingDetails);
+
     await pool.query(
       "INSERT INTO listing_details (listing_id, details) VALUES (?, ?)",
       [listingId, JSON.stringify(listingDetails)]
     );
 
-    // Return success response
-    res.status(201).json({ success: true, message: "Listing created successfully", listingId });
+    res.status(201).json({
+      success: true,
+      message: "Listing created successfully",
+      listingId,
+      imagePath: listingDetails.image_url || null,
+    });
   } catch (err) {
     console.error("Error creating listing:", err);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 
 // UPDATE Listings

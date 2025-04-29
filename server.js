@@ -8,7 +8,7 @@ const authUserRoute = require('./routes/authRoutes'); // if still required
 const amenitiesRoute = require('./routes/amenitiesRoutes');
 const bookingsRoute = require('./routes/bookingRoutes');
 const listingRoutes = require('./routes/listingRoutes');
-
+const path = require('path');
 dotenv.config();
 
 const app = express();
@@ -16,6 +16,7 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(corsMiddleware);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/admin', adminRoutes);

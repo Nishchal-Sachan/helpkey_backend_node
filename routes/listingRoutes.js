@@ -1,4 +1,5 @@
 const express = require("express");
+const upload = require('../middleware/upload');
 const router = express.Router();
 const {
   getListings,
@@ -29,7 +30,7 @@ router.get("/", getListings); // GET /api/listing?location=xyz
 router.get("/:id", getListingById); // GET /api/listing/:id
 
 // Protected admin actions
-router.post("/", verifyAdmin, createListing);                   // POST /api/listing
+router.post("/", verifyAdmin,upload.single('image'), createListing);                   // POST /api/listing
 router.put("/:id", verifyAdmin, updateListing);                 // PUT /api/listing/:id
 router.delete("/:id", verifyAdmin, deleteListing);              // DELETE /api/listing/:id
 
