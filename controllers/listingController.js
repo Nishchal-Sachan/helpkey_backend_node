@@ -120,7 +120,7 @@ exports.createListing = async (req, res) => {
     title, description, location, image_url,
     amenities, property_type, beds, bathrooms, guests,
     category, discount, room_type, number_of_rooms, floor_no, 
-    villa_details, hotel_details
+    villa_details, hotel_details, price
   } = req.body;
 
   // Ensure the required static fields are present
@@ -152,6 +152,7 @@ exports.createListing = async (req, res) => {
     if (bathrooms) listingDetails.bathrooms = bathrooms;
     if (guests) listingDetails.guests = guests;
     if (discount) listingDetails.discount = discount;
+    if (price) listingDetails.price = price; // Ensure price is added here
 
     // Specific fields for each property type
     if (property_type === "hotel") {
@@ -176,9 +177,9 @@ exports.createListing = async (req, res) => {
       if (villa_details) listingDetails.villa_details = villa_details;
       if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
       if (bathrooms) listingDetails.bathrooms = bathrooms;
-      if (price) listingDetails.price = price;
     }
 
+    console.log(listingDetails);
     // Insert dynamic data into the 'listing_details' table as JSON
     await pool.query(
       "INSERT INTO listing_details (listing_id, details) VALUES (?, ?)",
@@ -192,6 +193,7 @@ exports.createListing = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 // UPDATE Listings
 exports.updateListing = async (req, res) => {
