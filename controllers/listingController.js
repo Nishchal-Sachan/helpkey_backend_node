@@ -138,44 +138,53 @@ exports.createListing = async (req, res) => {
     );
 
     const listingId = result.insertId;
-
     const listingDetails = {};
 
-    // Use image path from multer
-    if (req.file) listingDetails.image_url = req.file.path;
+    // Handle image file
+    if (req.file && req.file.path) {
+      listingDetails.image_url = req.file.path;
+    }
 
-    if (amenities) listingDetails.amenities = amenities;
+    // Safe parsing for amenities if sent as a JSON string
+    if (amenities) {
+      try {
+        listingDetails.amenities = JSON.parse(amenities);
+      } catch (err) {
+        console.warn("Invalid JSON in amenities:", amenities);
+        return res.status(400).json({ success: false, error: "Invalid amenities format" });
+      }
+    }
+
     if (beds) listingDetails.beds = beds;
     if (bathrooms) listingDetails.bathrooms = bathrooms;
     if (guests) listingDetails.guests = guests;
     if (discount) listingDetails.discount = discount;
     if (price) listingDetails.price = price;
 
-    if (property_type === "hotel") {
-      if (room_type) listingDetails.room_type = room_type;
-      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
-      if (floor_no) listingDetails.floor_no = floor_no;
-      if (hotel_details) listingDetails.hotel_details = hotel_details;
-    }
-
-    if (property_type === "hostel") {
+    // Property-type-specific details
+    if (["hotel", "hostel", "apartment", "villa"].includes(property_type)) {
       if (room_type) listingDetails.room_type = room_type;
       if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
       if (floor_no) listingDetails.floor_no = floor_no;
     }
 
-    if (property_type === "apartment") {
-      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
-      if (floor_no) listingDetails.floor_no = floor_no;
+    if (property_type === "hotel" && hotel_details) {
+      try {
+        listingDetails.hotel_details = JSON.parse(hotel_details);
+      } catch {
+        listingDetails.hotel_details = hotel_details;
+      }
     }
 
-    if (property_type === "villa") {
-      if (villa_details) listingDetails.villa_details = villa_details;
-      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
-      if (bathrooms) listingDetails.bathrooms = bathrooms;
+    if (property_type === "villa" && villa_details) {
+      try {
+        listingDetails.villa_details = JSON.parse(villa_details);
+      } catch {
+        listingDetails.villa_details = villa_details;
+      }
     }
 
-    console.log("Listing details:", listingDetails);
+    console.log("Final listing details:", listingDetails);
 
     await pool.query(
       "INSERT INTO listing_details (listing_id, details) VALUES (?, ?)",
@@ -188,11 +197,14 @@ exports.createListing = async (req, res) => {
       listingId,
       imagePath: listingDetails.image_url || null,
     });
+
   } catch (err) {
-    console.error("Error creating listing:", err);
+    console.error("Error creating listing:", err.message);
+    console.error(err.stack);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
+
 
 
 
