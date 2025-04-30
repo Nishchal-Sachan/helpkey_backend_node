@@ -114,15 +114,28 @@ exports.getListingsByAdmin = async (req, res) => {
 };
 
 exports.createListing = async (req, res) => {
-  console.log("Body:", req.body);
-  console.log("File:", req.file);
+  console.log("Received Body:", req.body);
+  console.log("Received File:", req.file);
 
   const adminId = req.admin?.id;
+
   const {
-    title, description, location,
-    amenities, property_type, beds, bathrooms, guests,
-    category, discount, room_type, number_of_rooms, floor_no, 
-    villa_details, hotel_details, price
+    title,
+    description,
+    location,
+    amenities,
+    property_type,
+    beds,
+    bathrooms,
+    guests,
+    category,
+    discount,
+    room_type,
+    number_of_rooms,
+    floor_no,
+    villa_details,
+    hotel_details,
+    price,
   } = req.body;
 
   if (!title || !location || !property_type || !category) {
@@ -140,35 +153,38 @@ exports.createListing = async (req, res) => {
     const listingId = result.insertId;
     const listingDetails = {};
 
-    // Handle image file
-    if (req.file && req.file.path) {
+    // Handle image path
+    if (req.file?.path) {
       listingDetails.image_url = req.file.path;
     }
 
-    // Safe parsing for amenities if sent as a JSON string
+    // Parse amenities if sent as JSON string
     if (amenities) {
       try {
-        listingDetails.amenities = JSON.parse(amenities);
-      } catch (err) {
-        console.warn("Invalid JSON in amenities:", amenities);
+        listingDetails.amenities = Array.isArray(amenities)
+          ? amenities
+          : JSON.parse(amenities);
+      } catch {
         return res.status(400).json({ success: false, error: "Invalid amenities format" });
       }
     }
 
-    if (beds) listingDetails.beds = beds;
-    if (bathrooms) listingDetails.bathrooms = bathrooms;
-    if (guests) listingDetails.guests = guests;
-    if (discount) listingDetails.discount = discount;
-    if (price) listingDetails.price = price;
+    // Add basic fields (coerced to appropriate types)
+    if (beds !== undefined) listingDetails.beds = Number(beds);
+    if (bathrooms !== undefined) listingDetails.bathrooms = Number(bathrooms);
+    if (guests !== undefined) listingDetails.guests = Number(guests);
+    if (discount !== undefined) listingDetails.discount = Number(discount);
+    if (price !== undefined) listingDetails.price = Number(price);
 
-    // Property-type-specific details
-    if (["hotel", "hostel", "apartment", "villa"].includes(property_type)) {
-      if (room_type) listingDetails.room_type = room_type;
-      if (number_of_rooms) listingDetails.number_of_rooms = number_of_rooms;
-      if (floor_no) listingDetails.floor_no = floor_no;
+    // Property-type-specific fields
+    if (["hotel", "hostel", "apartment", "villa"].includes(property_type.toLowerCase())) {
+      if (room_type !== undefined) listingDetails.room_type = room_type;
+      if (number_of_rooms !== undefined) listingDetails.number_of_rooms = Number(number_of_rooms);
+      if (floor_no !== undefined) listingDetails.floor_no = Number(floor_no);
     }
 
-    if (property_type === "hotel" && hotel_details) {
+    // Handle hotel_details if present
+    if (property_type.toLowerCase() === "hotel" && hotel_details) {
       try {
         listingDetails.hotel_details = JSON.parse(hotel_details);
       } catch {
@@ -176,7 +192,8 @@ exports.createListing = async (req, res) => {
       }
     }
 
-    if (property_type === "villa" && villa_details) {
+    // Handle villa_details if present
+    if (property_type.toLowerCase() === "villa" && villa_details) {
       try {
         listingDetails.villa_details = JSON.parse(villa_details);
       } catch {
@@ -197,14 +214,11 @@ exports.createListing = async (req, res) => {
       listingId,
       imagePath: listingDetails.image_url || null,
     });
-
   } catch (err) {
-    console.error("Error creating listing:", err.message);
-    console.error(err.stack);
+    console.error("❌ Error creating listing:", err.message);
     res.status(500).json({ success: false, error: "Internal server error" });
   }
 };
-
 
 
 
