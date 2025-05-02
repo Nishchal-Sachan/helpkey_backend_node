@@ -35,7 +35,7 @@ exports.signupAdmin = async (req, res) => {
     const newUserId = result.insertId;
 
     const token = jwt.sign(
-      { id: newUserId, email, role: role || "admin" },
+      { id: admin.id, email, role: role || "admin" },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
@@ -78,7 +78,7 @@ exports.loginAdmin = async (req, res) => {
 
     res.cookie("token", token, {
       httpOnly: true,
-      secure: true,
+      secure: false,
       sameSite: "None",
       maxAge: 24 * 60 * 60 * 1000, // 1 day
     });

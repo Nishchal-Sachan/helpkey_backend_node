@@ -118,6 +118,7 @@ exports.createListing = async (req, res) => {
   console.log("Received File:", req.file);
 
   const adminId = req.admin?.id;
+  console.log(adminId);
 
   const {
     title,

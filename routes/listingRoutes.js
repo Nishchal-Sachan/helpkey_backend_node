@@ -1,6 +1,7 @@
 const express = require("express");
 const upload = require('../middleware/upload');
 const router = express.Router();
+const multer = require("multer");
 const {
   getListings,
   getListingById,
@@ -11,7 +12,7 @@ const {
 } = require("../controllers/listingController");
 const verifyAdmin = require("../middleware/authMiddleware");
 
-
+// const upload = multer({dest:"uploads/"});
 console.log({
   getListings,
   getListingById,
@@ -35,3 +36,5 @@ router.put("/:id", verifyAdmin, updateListing);                 // PUT /api/list
 router.delete("/:id", verifyAdmin, deleteListing);              // DELETE /api/listing/:id
 
 module.exports = router;
+
+
