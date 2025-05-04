@@ -8,6 +8,7 @@ const clientRoutes = require('./routes/clientRoutes'); // Routes for client auth
 const amenitiesRoute = require('./routes/amenitiesRoutes');
 const bookingsRoute = require('./routes/bookingRoutes');
 const listingRoutes = require('./routes/listingRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 const path = require('path');
 
 dotenv.config();
@@ -28,6 +29,7 @@ app.use('/api/client', clientRoutes); // Client authentication and other client-
 app.use('/api/amenities', amenitiesRoute); // Amenities related routes
 app.use('/api/bookings', bookingsRoute); // Booking related routes
 app.use('/api/listings', listingRoutes); // Listing related routes
+app.use('/api/payment', paymentRoutes);
 
 // // 404 handler
 // app.use((req, res) => {

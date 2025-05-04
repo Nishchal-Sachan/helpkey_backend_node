@@ -9,9 +9,10 @@ const {
   deleteBooking,
 } = require("../controllers/bookingController");
 const verifyAdmin = require("../middleware/authMiddleware");
+const verifyClient = require("../middleware/client");
 
 // Public Routes
-router.post("/", createBooking);
+router.post("/",verifyClient, createBooking);
 // router.get("/location/:location", getBookingsByLocation);
 router.get("/:id", getBookingById);
 

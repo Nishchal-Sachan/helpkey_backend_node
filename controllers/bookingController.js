@@ -1,43 +1,80 @@
 const pool = require("../utils/db");
 
+
+
 // ✅ Unauthenticated — anyone can create a booking
 exports.createBooking = async (req, res) => {
+  console.log("body",req);
+  const client_id = req.client.id; 
+  const {
+    hotel_id,
+    guest_name,  // Combined name
+    guest_email, // Added guest_email
+    check_in,
+    check_out,
+    total_price,
+    payment_id
+  } = req.body;
+
+  // Validate input
+  if (!hotel_id || !check_in || !check_out || !total_price || !payment_id || !guest_name || !client_id || !guest_email) {
+    return res.status(400).json({ success: false, message: 'Missing required booking fields.' });
+  }
+
   try {
-    const { hotel_id, guest_name, check_in, check_out } = req.body;
-
-    if (!hotel_id || !guest_name || !check_in || !check_out) {
-      return res.status(400).json({ success: false, error: "All fields are required" });
-    }
-
-    const [result] = await pool.query(
-      `INSERT INTO bookings (hotel_id, guest_name, check_in, check_out) VALUES (?, ?, ?, ?)`,
-      [hotel_id, guest_name, check_in, check_out]
+    // Insert into bookings table
+    const [bookingResult] = await pool.query(
+      `INSERT INTO bookings (hotel_id, check_in, check_out, total_price, payment_id, client_id)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [hotel_id, check_in, check_out, total_price, payment_id, client_id]
     );
 
-    res.status(201).json({
-      success: true,
-      bookingId: result.insertId,
-      message: "Booking created successfully",
-    });
-  } catch (err) {
-    console.error("Create Booking Error:", err);
-    res.status(500).json({ success: false, error: "Internal Server Error" });
+    const bookingId = bookingResult.insertId;
+
+    // Insert into booking_guests table with guest's full name and email
+    await pool.query(
+      `INSERT INTO booking_guests (booking_id, name, email)
+       VALUES (?, ?, ?)`,
+      [bookingId, guest_name, guest_email]
+    );
+
+    // Respond with success and the created booking ID
+    return res.status(201).json({ success: true, bookingId });
+  } catch (error) {
+    console.error('Booking error:', error);
+    return res.status(500).json({ success: false, message: 'Booking failed.' });
   }
 };
 
+
+
+
+
+// ✅ Authenticated — only return bookings belonging to this admin
 // ✅ Authenticated — only return bookings belonging to this admin
 exports.getAllBookings = async (req, res) => {
   try {
     const adminId = req.admin?.id;
 
-
     const [bookings] = await pool.query(
-      `SELECT b.* FROM bookings b
+      `SELECT b.*, b.client_id, g.name AS guest_name, g.email AS guest_email
+       FROM bookings b
        JOIN listings l ON b.hotel_id = l.id
+       JOIN booking_guests g ON b.id = g.booking_id
        WHERE l.admin_id = ?
        ORDER BY b.created_at DESC`,
       [adminId]
     );
+
+    // Split the guest_name into first and last names if needed
+    // const bookingsWithGuestNameSplit = bookings.map(booking => {
+    //   const [firstName, lastName] = booking.guest_name.split(' ');
+    //   return {
+    //     ...booking,
+    //     guest_first_name: firstName,
+    //     guest_last_name: lastName,
+    //   };
+    // });
 
     res.status(200).json({ success: true, data: bookings });
   } catch (err) {
@@ -46,12 +83,19 @@ exports.getAllBookings = async (req, res) => {
   }
 };
 
+
 // ✅ Get single booking by ID — no auth required
 exports.getBookingById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const [rows] = await pool.query("SELECT * FROM bookings WHERE id = ?", [id]);
+    const [rows] = await pool.query(
+      `SELECT b.*, b.client_id, g.name AS guest_name, g.email AS guest_email
+       FROM bookings b
+       LEFT JOIN booking_guests g ON b.id = g.booking_id
+       WHERE b.id = ?`,
+      [id]
+    );
 
     if (rows.length === 0) {
       return res.status(404).json({ success: false, error: "Booking not found" });
@@ -63,6 +107,7 @@ exports.getBookingById = async (req, res) => {
     res.status(500).json({ success: false, error: "Internal Server Error" });
   }
 };
+
 
 // // Public — Get bookings by location
 // exports.getBookingsByLocation = async (req, res) => {

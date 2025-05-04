@@ -133,6 +133,8 @@ exports.getAuthAdmin = async (req, res) => {
 // Client Signup
 exports.signupClient = async (req, res) => {
   console.log("✅ client signup called");
+  console.log("Client Signup Body:", req.body); // Add this right after the function starts
+
   const { first_name, last_name, email, phone_number, password } = req.body;
 
   if (!first_name || !last_name || !email || !password || !phone_number) {
@@ -144,7 +146,6 @@ exports.signupClient = async (req, res) => {
       "SELECT id, email, phone_number FROM clients WHERE email = ? OR phone_number = ?",
       [email, phone_number]
     );
-
     if (existingUsers.length > 0) {
       const existingUser = existingUsers[0];
       const duplicateField = existingUser.email === email ? "Email" : "Phone number";
